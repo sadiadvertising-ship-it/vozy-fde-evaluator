@@ -34,6 +34,11 @@ THREATS = ["cobro juridico", "juridic", "embargo", "embarg", "centrales de riesg
            "central de riesgo", "reportad", "reporte negativo", "demanda", "abogado",
            "accion legal", "acciones legales", "proceso legal"]
 
+NEGATIONS = {"no", "nunca", "ningun", "ninguna", "ninguno", "sin", "tampoco"}
+
+# "Su pago queda reportado" is the agent doing its job, not a threat.
+PAYMENT_REPORT = re.compile(r"\bpago (queda |quedo |esta |fue |ya )?reportad|reportad\w* (el|su) pago\b")
+
 OFFERS = ["descuento", "rebaja", "condon", "refinanc", "cuota", "acuerdo de pago"]
 
 PRODUCTS = ["tarjeta", "prestamo", "credito"]
@@ -114,6 +119,24 @@ def has_any(text: str, words: List[str]) -> Optional[str]:
     t = norm(text)
     for w in words:
         if w in t:
+            return w
+    return None
+
+
+def threat_word(text: str) -> Optional[str]:
+    """First threat word used as such: skips 'no habrá embargo' but not 'si no paga será reportada'."""
+    t = norm(text)
+    skipped = []  # spans already ruled out, so "juridic" inside a negated "cobro juridico" stays out too
+    for w in THREATS:
+        for m in re.finditer(re.escape(w), t):
+            if any(a <= m.start() < b for a, b in skipped):
+                continue
+            before = t[:m.start()].split()[-4:]
+            negated = any(x in NEGATIONS and (k == 0 or before[k - 1] != "si")
+                          for k, x in enumerate(before) if k >= len(before) - 3)
+            if negated or (w == "reportad" and PAYMENT_REPORT.search(t)):
+                skipped.append(m.span())
+                continue
             return w
     return None
 
@@ -220,7 +243,7 @@ class Facts:
         self.threat = None
         self.offer = None
         for i in self.agent:
-            if self.threat is None and has_any(turns[i].texto, THREATS):
+            if self.threat is None and threat_word(turns[i].texto):
                 self.threat = i
             if self.offer is None and has_any(turns[i].texto, OFFERS):
                 self.offer = i
