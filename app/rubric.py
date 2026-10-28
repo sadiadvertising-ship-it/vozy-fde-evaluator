@@ -67,7 +67,7 @@ RUBRIC = [
     Criterion(
         "C9", "R9", "Cierre con resumen y despedida",
         "El agente cierra resumiendo el resultado (monto y fecha del compromiso o la gestión registrada) y se despide.",
-        "Si la llamada la termina el agente; no aplica si el cliente cuelga antes del cierre o se transfiere.",
+        "Si la llamada la termina o la transfiere el agente; no aplica si el cliente cuelga antes del cierre.",
         "leve", "llm",
     ),
     Criterion(

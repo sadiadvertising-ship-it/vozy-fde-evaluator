@@ -83,3 +83,9 @@ def test_threat_words_skip_negations():
     assert threat_word("Tranquila, no hay ningún proceso de embargo.") is None
     assert threat_word("Su caso no pasa a cobro jurídico.") is None
     assert threat_word("Listo, su pago queda reportado y lo verificamos en 48 horas.") is None
+
+
+def test_transfer_is_a_fact():
+    by_id = {c.id: c for c in DATA.conversaciones}
+    assert Facts(by_id["C12"]).transferred
+    assert not Facts(by_id["C07"]).transferred

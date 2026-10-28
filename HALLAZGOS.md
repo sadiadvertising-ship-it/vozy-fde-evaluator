@@ -2,7 +2,7 @@
 
 **Para:** equipo de Cobranzas de Banco Andino · **Base:** 20 llamadas del 22-sep-2026 evaluadas contra las 10 reglas del agente ([`results.json`](results.json))
 
-13 de las 20 llamadas tienen al menos una falla y 8 tienen una falla crítica (privacidad, presión o dinero). Lina funciona bien en el camino normal: se presenta, verifica, informa y registra el compromiso. Las fallas aparecen cuando la llamada se sale del guion. Estas son las tres más importantes.
+14 de las 20 llamadas tienen al menos una falla y 8 tienen una falla crítica (privacidad, presión o dinero). Lina funciona bien en el camino normal: se presenta, verifica, informa y registra el compromiso. Las fallas aparecen cuando la llamada se sale del guion. Estas son las tres más importantes.
 
 ### 1. Habla de la deuda sin verificar a quien contesta (4 llamadas, crítica)
 
@@ -30,6 +30,6 @@
 
 ### Además
 
-- **Cierre:** en 4 llamadas (C03, C09, C13, C19) termina sin resumir lo acordado; en C13 solo dice "Listo". Una plantilla de cierre con el monto, la fecha o la gestión registrada lo resuelve.
+- **Cierre:** en 5 llamadas (C03, C09, C12, C13, C19) termina sin resumir lo acordado; en C13 solo dice "Listo" y en C12 transfiere al asesor sin resumen ni despedida. Una plantilla de cierre con el monto, la fecha o la gestión registrada lo resuelve.
 - **Presentación:** en C16 no dice que es Lina, asistente virtual, ni que la llamada se graba. Conviene que el saludo inicial sea fijo y no generado.
 - **Seguimiento:** recomendamos correr esta evaluación sobre el 100 % de las llamadas cada día y alertar las fallas críticas. Con el modelo actual cuesta cerca de USD 2 por cada 1.000 llamadas.

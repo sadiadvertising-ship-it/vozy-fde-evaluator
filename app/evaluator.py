@@ -30,11 +30,11 @@ Casos frontera:
 - C6: aplica siempre. Si nadie menciona descuentos ni cuotas, es "cumple". Ofrecer, aceptar o calcular un descuento es "no_cumple". Decir que no está autorizado y registrar la solicitud es "cumple".
 - C7: aplica si el cliente pide un humano o disputa la deuda: desconoce el producto, sospecha fraude, insiste en que no debe nada o anuncia un reclamo ("voy a reclamar"). Sorprenderse por el monto ("¿tanto?") NO es disputa. Pedir descuento, cuotas o refinanciación tampoco activa C7 (eso se evalúa en C6) salvo que el cliente pida hablar con una persona. Si el cliente pide un humano y el agente lo registra o transfiere, es "cumple".
 - C8: aplica solo si el cliente dice que ya pagó.
-- C9: no aplica si el cliente cuelga antes del cierre o si la llamada se transfiere. Un resumen válido repite la gestión (monto y fecha del compromiso, o lo que quedó registrado). Un "Listo" o "hasta luego" solos no son resumen. Si no quedó ninguna gestión concreta (compromiso, solicitud registrada u horario para volver a llamar), no hay nada que resumir y es "no_cumple".
+- C9: no aplica solo si el cliente cuelga antes del cierre. Si el agente transfiere a un asesor, C9 sí aplica: antes de transferir debe resumir lo gestionado y despedirse; transferir sin eso es "no_cumple". Anunciar la transferencia ("la transfiero con un asesor") no es un resumen ni una despedida. Un resumen válido repite la gestión (monto y fecha del compromiso, o lo que quedó registrado). Un "Listo", "gracias" o "hasta luego" solos no son resumen. Si es "cumple", la cita debe ser el turno donde el agente resume, no la despedida. Si no quedó ninguna gestión concreta (compromiso, solicitud registrada u horario para volver a llamar), no hay nada que resumir y es "no_cumple".
 - C10: amenazar o mencionar cobro jurídico, embargos o centrales de riesgo es "no_cumple". Insistir en una fecha de pago después de que el cliente pidió un asesor o dijo que ya pagó también es presión.
 
 Compromiso de pago:
-- "existe" es true si el cliente dice cuándo va a pagar y el agente lo registra o lo acepta, aunque sea solo con "Listo".
+- "existe" es true si el cliente dice cuándo va a pagar, aunque sea vago ("el sábado"), y el agente lo registra o lo acepta, aunque sea solo con "Listo" o "Gracias".
 - "fecha" en formato YYYY-MM-DD solo si en la llamada se menciona un número de día concreto (usa la fecha de la llamada para el mes y el año). Si solo dicen un día de la semana sin número ("el sábado"), "fecha" es null.
 """
 

@@ -88,7 +88,7 @@ Un criterio por regla, para que el reporte se lea en los mismos términos que la
 | C6 | R6 | Sin descuentos, cuotas ni refinanciaciones | No los ofrece ni acepta; si se los piden, registra la solicitud para un asesor | Siempre | crítica | LLM |
 | C7 | R7 | Escalamiento a asesor o reclamo | Transfiere o registra el contacto con un asesor | Si piden un humano o disputan la deuda | grave | LLM |
 | C8 | R8 | Manejo de pago ya realizado | Pide fecha y canal, avisa las 48 h y no insiste | Si el cliente dice que ya pagó | grave | LLM |
-| C9 | R9 | Cierre con resumen y despedida | Resume la gestión y se despide | Si la llamada la cierra el agente | leve | LLM |
+| C9 | R9 | Cierre con resumen y despedida | Resume la gestión y se despide, también antes de transferir | Si la llamada la cierra o la transfiere el agente | leve | LLM |
 | C10 | R10 | Trato respetuoso, sin presión ni amenazas | No presiona, no amenaza, no menciona acciones legales, embargos ni centrales de riesgo | Siempre | crítica | código + LLM |
 
 **Severidad.** Mide cuánto le cuesta la falla al banco, no qué tan seguido pasa:
@@ -100,9 +100,9 @@ La severidad de la llamada es la más alta de sus fallas.
 
 **Puntaje (0–100).** Promedio ponderado de los criterios que aplican, con peso 3 / 2 / 1 según la severidad del criterio. Una falla crítica pesa más que un cierre incompleto. Los criterios "no aplica" y "no evaluado" no entran en la cuenta.
 
-**Supuestos** (consultados a Vozy por correo el 27-oct):
-- R2: si el agente nunca habla de la deuda, verificar los dígitos no hace falta → "no aplica" (C18).
-- R9: si el cliente cuelga antes del cierre o la llamada se transfiere a un humano → "no aplica" (C07, C12).
+**Criterios confirmados con Vozy** (pregunté por correo el 27-oct; respondió el 28-oct):
+- R2: si el agente nunca habla de la deuda, queda "no aplica" (C18); dar detalles de la deuda sin los 4 dígitos confirmados es falla.
+- R9: si el cliente cuelga antes del cierre, "no aplica" (C07). Si el agente transfiere a un asesor sin resumir y despedirse, es falla (C12). Mi supuesto inicial era "no aplica" en ambos casos; lo corregí con su respuesta.
 
 ## Qué resolví con código y qué con LLM
 
@@ -127,11 +127,12 @@ Califiqué a mano las 20 llamadas (200 decisiones, en `tests/golden.json`) y med
 
 | Modelo | Acuerdo | Tiempo (20 llamadas) |
 |---|---|---|
-| gemini-3.5-flash-lite (por defecto), local | 199/200 (99,5 %) | 47 s |
+| gemini-3.5-flash-lite (por defecto), local, con la regla de R9 confirmada por Vozy | 198/200 (99 %) | 101 s |
+| gemini-3.5-flash-lite, local, antes de la respuesta de Vozy | 199/200 (99,5 %) | 47 s |
 | gemini-3.5-flash-lite, servicio en Render (`results.json`) | 199/200 (99,5 %) | 129 s, incluye despertar el servicio |
 | gemini-3.5-flash | 199/200 (99,5 %) | 237 s (3 de las 20 las respondió el respaldo por el límite de 5 por minuto; agota la cuota de 20 al día) |
 
-El único desacuerdo es C06 C7: la cliente pide refinanciación, la agente ofrece un asesor y lo registra. Yo lo califico "no aplica" (pedir cuotas es R6, no R7) y el modelo "cumple". No genera una falla falsa.
+Los desacuerdos cambian entre corridas y siempre caen en casos frontera de C7 y C9 (C03, C09, C12 en alguna corrida). El que se repite en todas es C06 C7: la cliente pide refinanciación, la agente ofrece un asesor y lo registra. Yo lo califico "no aplica" (pedir cuotas es R6, no R7) y el modelo "cumple". No genera una falla falsa.
 
 Las 4 reglas por código coinciden con la calificación manual en las 20 llamadas en todas las corridas (`tests/test_checks.py`). Las de LLM variaron entre 98 % y 99,5 % entre corridas mientras ajustaba el prompt.
 
