@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluador de llamadas de Lina</title>
+<style>
+  :root { --ink:#16202c; --muted:#5b6878; --line:#d9e0e8; --blue:#1f5fbf; --ok:#2e7d4f; --bad:#c0392b; --na:#9aa5b1; --bg:#f7f9fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width:1100px; margin:0 auto; padding:28px 16px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.lead { color:var(--muted); margin:0 0 20px; }
+  .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:18px; }
+  button, label.file { background:var(--blue); color:#fff; border:0; border-radius:6px; padding:9px 14px; font:inherit; cursor:pointer; }
+  label.file { background:#fff; color:var(--blue); border:1px solid var(--blue); }
+  input[type=file] { display:none; }
+  button:disabled { opacity:.5; cursor:wait; }
+  a { color:var(--blue); }
+  #status { color:var(--muted); }
+  .wrap { overflow-x:auto; background:#fff; border:1px solid var(--line); border-radius:8px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th, td { padding:7px 9px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap; }
+  th:first-child, td:first-child { text-align:left; }
+  thead th { background:#eef3f9; font-weight:600; }
+  td.cell { cursor:pointer; font-weight:600; }
+  .cumple { color:var(--ok); } .no_cumple { color:#fff; background:var(--bad); } .no_aplica { color:var(--na); } .no_evaluado { color:#b7791f; }
+  .sev-critica { color:var(--bad); font-weight:600; } .sev-grave { color:#b7791f; font-weight:600; }
+  tfoot td { font-weight:600; background:#f2f5f8; }
+  #detail { margin-top:16px; background:#fff; border:1px solid var(--line); border-left:4px solid var(--blue); border-radius:6px; padding:12px 16px; display:none; }
+  #detail blockquote { margin:8px 0; padding:6px 12px; background:#f2f5f8; border-radius:4px; }
+  .legend { color:var(--muted); font-size:13px; margin:10px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Evaluador de llamadas de Lina</h1>
+  <p class="lead">Rúbrica de 10 criterios sobre las reglas R1–R10 del agente de cobranza de Banco Andino. Documentación de la API en <a href="/docs">/docs</a>.</p>
+
+  <div class="bar">
+    <button id="sample">Evaluar el archivo de la prueba</button>
+    <label class="file">Subir otro JSON<input type="file" id="file" accept=".json,application/json"></label>
+    <a id="download" style="display:none">Descargar results.json</a>
+    <span id="status"></span>
+  </div>
+
+  <div class="wrap"><table id="grid"></table></div>
+  <p class="legend">✓ cumple · ✗ no cumple · – no aplica · ? no evaluado. Clic en una celda para ver la cita y la explicación.</p>
+  <div id="detail"></div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const mark = { cumple: "✓", no_cumple: "✗", no_aplica: "–", no_evaluado: "?" };
+let data = null;
+
+async function post(url, body) {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const out = await r.json();
+  if (!r.ok) throw new Error(out.error || JSON.stringify(out.detail || out));
+  return out;
+}
+
+// One request per call instead of one long batch: the free Gemini tier allows few requests
+// per minute, so the table fills in as answers arrive instead of waiting minutes on a blank page.
+async function run(dataset) {
+  $("#sample").disabled = true;
+  $("#detail").style.display = "none";
+  $("#download").style.display = "none";
+  const convs = dataset.conversaciones, results = new Array(convs.length);
+  let done = 0, next = 0;
+  const status = () => $("#status").textContent = `Evaluando ${done}/${convs.length}…`;
+  status();
+  try {
+    const worker = async () => {
+      while (next < convs.length) {
+        const i = next++;
+        results[i] = await post("/evaluate", { especificacion_agente: dataset.especificacion_agente, conversacion: convs[i] });
+        done++;
+        status();
+        data = { conversaciones: results.filter(Boolean), reporte: { por_criterio: rubric } };
+        draw(false);
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    const reporte = await post("/report", results);
+    data = { modelo: health.modelo, generado: new Date().toISOString(), reporte, conversaciones: results };
+    draw(true);
+    const n = results.filter(c => c.estado !== "completo").length;
+    $("#status").textContent = `Listo · modelo ${health.modelo}` + (n ? ` · ${n} con criterios sin evaluar` : "");
+  } catch (e) {
+    $("#status").textContent = "Error: " + e.message;
+  } finally {
+    $("#sample").disabled = false;
+  }
+}
+
+let rubric = [], health = {};
+fetch("/rubric").then(r => r.json()).then(r => rubric = r.map(c => ({ criterio: c.id, nombre: c.name, tasa_cumplimiento: null })));
+fetch("/health").then(r => r.json()).then(h => health = h);
+
+function draw(final) {
+  const ids = data.reporte.por_criterio.map(c => c.criterio);
+  let h = "<thead><tr><th>Llamada</th>" + ids.map(i => `<th title="${data.reporte.por_criterio.find(c => c.criterio === i).nombre}">${i}</th>`).join("") + "<th>Puntaje</th><th>Severidad</th></tr></thead><tbody>";
+  data.conversaciones.forEach((c, ci) => {
+    h += `<tr><td>${c.id}</td>`;
+    c.criterios.forEach((k, ki) => h += `<td class="cell ${k.resultado}" data-c="${ci}" data-k="${ki}">${mark[k.resultado]}</td>`);
+    h += `<td>${c.puntaje}</td><td class="sev-${c.severidad}">${c.severidad}</td></tr>`;
+  });
+  h += "</tbody><tfoot><tr><td>Cumplimiento</td>" + data.reporte.por_criterio.map(s =>
+    `<td>${s.tasa_cumplimiento === null ? "–" : Math.round(s.tasa_cumplimiento * 100) + "%"}</td>`).join("") +
+    `<td>${data.reporte.puntaje_promedio ?? ""}</td><td></td></tr></tfoot>`;
+  $("#grid").innerHTML = h;
+  if (!final) return;
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = $("#download");
+  a.href = URL.createObjectURL(blob);
+  a.download = "results.json";
+  a.style.display = "inline";
+}
+
+$("#grid").addEventListener("click", e => {
+  const td = e.target.closest("td.cell");
+  if (!td) return;
+  const c = data.conversaciones[td.dataset.c], k = c.criterios[td.dataset.k];
+  const esc = s => String(s).replace(/[&<>]/g, x => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[x]));
+  $("#detail").innerHTML = `<strong>${c.id} · ${k.criterio} ${esc(k.nombre)}</strong> (${k.regla}, ${k.metodo})<br>` +
+    `Resultado: <span class="${k.resultado}">${k.resultado.replace("_", " ")}</span>` + (k.severidad !== "ninguna" ? ` · severidad ${k.severidad}` : "") +
+    (k.cita ? `<blockquote>“${esc(k.cita)}”${k.turno !== null ? ` <small>(turno ${k.turno})</small>` : ""}</blockquote>` : "<br>") +
+    esc(k.explicacion);
+  $("#detail").style.display = "block";
+});
+
+$("#sample").onclick = () => fetch("/sample").then(r => r.json()).then(run);
+$("#file").onchange = async e => {
+  const f = e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  let dataset;
+  try {
+    dataset = JSON.parse(await f.text());
+    if (!dataset.especificacion_agente || !Array.isArray(dataset.conversaciones)) throw new Error("faltan especificacion_agente o conversaciones");
+  } catch (err) {
+    $("#status").textContent = "El archivo no tiene el formato esperado: " + err.message;
+    return;
+  }
+  run(dataset);
+};
+</script>
+</body>
+</html>
