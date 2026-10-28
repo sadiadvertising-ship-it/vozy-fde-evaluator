@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: lina-call-evaluator
+    name: vozy-fde-evaluator
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
