@@ -62,6 +62,7 @@ class CriterionResult(BaseModel):
 class ConversationResult(BaseModel):
     id: str
     estado: Literal["completo", "parcial"]
+    modelo: Optional[str] = Field(None, description="Modelo que respondió (puede ser el de respaldo).")
     resultado_llamada: str
     puntaje: float = Field(ge=0, le=100)
     severidad: Severity

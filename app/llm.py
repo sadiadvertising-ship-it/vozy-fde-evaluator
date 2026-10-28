@@ -35,6 +35,7 @@ class LLMOutput(BaseModel):
     resultado_llamada: str
     compromiso: Commitment
     criterios: List[LLMCriterion]
+    modelo: Optional[str] = None
 
 
 SCHEMA = {
@@ -65,6 +66,8 @@ SCHEMA = {
                     "explicacion": {"type": "STRING"},
                 },
                 "required": ["criterio", "resultado", "explicacion"],
+                # Reason first, decide last: the verdict has to follow from the explanation.
+                "propertyOrdering": ["criterio", "explicacion", "cita", "resultado"],
             },
         },
     },
@@ -75,8 +78,9 @@ SCHEMA = {
 class Gemini:
     def __init__(self):
         self.key = os.getenv("GEMINI_API_KEY", "")
-        self.model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
-        # Used only when the main model keeps answering 429/503 (free tier gets saturated).
+        # Flash-Lite: the free tier gives it 500 requests/day against 20/day for Flash.
+        self.model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+        # Used only when the main model keeps failing (429/503, quota, outage).
         self.fallback = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.1-flash-lite")
         self.thinking = os.getenv("GEMINI_THINKING_LEVEL", "low")
         self.timeout = float(os.getenv("LLM_TIMEOUT", "60"))
@@ -136,6 +140,9 @@ class Gemini:
                 await asyncio.sleep(2 ** attempt)
                 continue
 
+            if r.status_code == 429 and "PerDay" in r.text:
+                # Waiting does not help with a daily quota; go to the next model now.
+                raise LLMError("cuota diaria agotada")
             if r.status_code in (429, 500, 502, 503, 504):
                 last = "HTTP %d" % r.status_code
                 await asyncio.sleep(retry_delay(r.text, attempt))
@@ -149,7 +156,9 @@ class Gemini:
             self.tokens_out += usage.get("candidatesTokenCount", 0) + usage.get("thoughtsTokenCount", 0)
             try:
                 text = data["candidates"][0]["content"]["parts"][0]["text"]
-                return LLMOutput(**json.loads(text))
+                out = LLMOutput(**json.loads(text))
+                out.modelo = model
+                return out
             except (KeyError, IndexError, json.JSONDecodeError, ValidationError) as e:
                 # A malformed answer is retried like a transient error.
                 last = "respuesta inválida: %s" % type(e).__name__
