@@ -6,7 +6,7 @@ Servicio que evalúa las llamadas de **Lina**, el agente de cobranza por voz de 
 - Documentación de la API (Swagger): https://vozy-fde-evaluator.onrender.com/docs
 - Resultado de las 20 llamadas: [`results.json`](results.json)
 - Hallazgos para el cliente: [`HALLAZGOS.md`](HALLAZGOS.md)
-- Video: _pendiente_
+- Video: https://www.loom.com/share/ad23a2f6d53d4227a69833e0af7968cb
 
 ## Cómo usarlo
 
