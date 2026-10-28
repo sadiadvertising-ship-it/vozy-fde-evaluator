@@ -90,6 +90,26 @@ def dates(text: str, year: int) -> List[date]:
     return out
 
 
+WEEKDAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+
+
+def weekday_date(text: str, call: date) -> Optional[date]:
+    """'el domingo 27' -> the date in the call's month (or the next) where the 27th is a Sunday."""
+    m = re.search(r"(" + "|".join(WEEKDAYS) + r") (\d{1,2})\b", norm(text))
+    if not m:
+        return None
+    wd, day = WEEKDAYS.index(m.group(1)), int(m.group(2))
+    for k in range(3):
+        y, mon = call.year + (call.month + k - 1) // 12, (call.month + k - 1) % 12 + 1
+        try:
+            d = date(y, mon, day)
+        except ValueError:
+            continue
+        if d.weekday() == wd:
+            return d
+    return None
+
+
 def has_any(text: str, words: List[str]) -> Optional[str]:
     t = norm(text)
     for w in words:
@@ -108,6 +128,12 @@ def locate(conv: Conversation, quote: Optional[str]) -> Tuple[Optional[int], Opt
     for i, t in enumerate(conv.transcripcion):
         if q in norm(t.texto):
             return i, quote_slice(t.texto, quote)
+
+    # The model may glue a short turn to a system note ("Listo. [Llamada finalizada]").
+    inside = [i for i, t in enumerate(conv.transcripcion) if len(norm(t.texto)) >= 4 and norm(t.texto) in q]
+    if inside:
+        i = max(inside, key=lambda i: len(conv.transcripcion[i].texto))
+        return i, conv.transcripcion[i].texto
 
     best, idx = 0.0, None
     for i, t in enumerate(conv.transcripcion):
