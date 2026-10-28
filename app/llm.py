@@ -75,9 +75,9 @@ SCHEMA = {
 class Gemini:
     def __init__(self):
         self.key = os.getenv("GEMINI_API_KEY", "")
-        self.model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+        self.model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
         # Used only when the main model keeps answering 429/503 (free tier gets saturated).
-        self.fallback = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash")
+        self.fallback = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.1-flash-lite")
         self.thinking = os.getenv("GEMINI_THINKING_LEVEL", "low")
         self.timeout = float(os.getenv("LLM_TIMEOUT", "60"))
         self.retries = int(os.getenv("LLM_RETRIES", "3"))
