@@ -240,6 +240,8 @@ class Facts:
                 if ds:
                     self.commit_date, self.commit_turn = ds[-1], i
 
+        self.transferred = any(t.hablante == "sistema" and "transferid" in norm(t.texto) for t in turns)
+
         self.threat = None
         self.offer = None
         for i in self.agent:
@@ -265,6 +267,7 @@ class Facts:
             "monto_dicho_por_el_agente": self.stated_amount,
             "fecha_vencimiento_dicha_por_el_agente": str(self.stated_date) if self.stated_date else None,
             "fecha_compromiso_confirmada_por_el_agente": str(self.commit_date) if self.commit_date else None,
+            "llamada_transferida_a_asesor": self.transferred,
             "turno_con_palabras_de_amenaza": self.threat,
             "turno_que_menciona_descuentos_o_cuotas": self.offer,
         }
