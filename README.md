@@ -129,7 +129,7 @@ Califiqué a mano las 20 llamadas (200 decisiones, en `tests/golden.json`) y med
 |---|---|---|
 | gemini-3.5-flash-lite (por defecto), local, con la regla de R9 confirmada por Vozy | 198/200 (99 %) | 101 s |
 | gemini-3.5-flash-lite, local, antes de la respuesta de Vozy | 199/200 (99,5 %) | 47 s |
-| gemini-3.5-flash-lite, servicio en Render (`results.json`) | 199/200 (99,5 %) | 129 s, incluye despertar el servicio |
+| gemini-3.5-flash-lite, servicio en Render (`results.json`, 28-oct, con la regla de R9) | 199/200 (99,5 %) | 246 s, sin caché |
 | gemini-3.5-flash | 199/200 (99,5 %) | 237 s (3 de las 20 las respondió el respaldo por el límite de 5 por minuto; agota la cuota de 20 al día) |
 
 Los desacuerdos cambian entre corridas y siempre caen en casos frontera de C7 y C9 (C03, C09, C12 en alguna corrida). El que se repite en todas es C06 C7: la cliente pide refinanciación, la agente ofrece un asesor y lo registra. Yo lo califico "no aplica" (pedir cuotas es R6, no R7) y el modelo "cumple". No genera una falla falsa.
