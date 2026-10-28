@@ -111,7 +111,7 @@ La severidad de la llamada es la más alta de sus fallas.
 - **R4:** convierte el monto dicho en palabras a número ("dos millones seiscientos veinte mil" → 2.620.000) y lo compara con `monto_vencido_cop` (C11). Lo mismo con la fecha de vencimiento (C19).
 - **R5:** valida la fecha contra la ventana de la llamada a +5 días. Las fechas dichas como "el domingo 27" se resuelven con el calendario y se verifica que el día de la semana coincida.
 - **R1:** frases obligatorias en los primeros turnos del agente.
-- **R10:** palabras prohibidas (cobro jurídico, embargo, centrales de riesgo, reporte…). Si aparecen, es falla aunque el modelo diga otra cosa.
+- **R10:** palabras prohibidas (cobro jurídico, embargo, centrales de riesgo, reporte…). Si aparecen, es falla aunque el modelo diga otra cosa. No cuentan las menciones negadas ("no hay ningún proceso de embargo") ni "su pago queda reportado"; esas las juzga el LLM. "Si no paga será reportada" sí cuenta.
 
 **LLM**, para lo que depende de entender la intención: si quien contesta es un tercero, si el cliente disputa la deuda o solo se sorprende, si pidió un humano, si dijo que ya pagó, si el cierre resume la gestión y si hubo presión sin palabras prohibidas. El modelo recibe los hechos que ya calculó el código, para que no los contradiga.
 
@@ -168,7 +168,7 @@ Con `gemini-3.5-flash` serían ~USD 4–5 por 1.000 (precio más alto y más tok
 
 - La calificación de referencia la hice yo solo; otra persona podría decidir distinto los casos frontera (por ejemplo, C06 C7).
 - Las fechas sin año se asumen del año de la llamada; los montos, en pesos colombianos. Montos con decimales o en otra moneda no se reconocen.
-- Las palabras prohibidas de R10 no detectan negaciones ("no lo vamos a reportar" contaría como falla).
+- La detección de negaciones en R10 mira las 3 palabras anteriores; una negación más lejana ("no creo que su caso, por ahora, pase a cobro jurídico") todavía cuenta como amenaza.
 - La detección de un tercero mira si la respuesta a "¿hablo con…?" empieza con "no".
 - El plan gratis de Render se duerme tras 15 minutos sin uso: la primera petición puede tardar cerca de un minuto. La caché se pierde al dormirse.
 - Con el tier gratis, una corrida queda limitada por la cuota diaria: si se agota en ambos modelos, las llamadas salen `parcial`.

@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import date, datetime, timezone
 from typing import List, Optional
 
-from .checks import Facts, has_any, locate, max_commit_date, norm, weekday_date, THREATS
+from .checks import Facts, locate, max_commit_date, norm, threat_word, weekday_date
 from .llm import Gemini, LLMError, LLMOutput
 from .models import (AgentSpec, BatchResult, Conversation, ConversationResult,
                      CriterionResult, CriterionStats, Report)
@@ -179,7 +179,7 @@ def money(n: int) -> str:
 def from_llm(cid: str, conv: Conversation, llm: Optional[LLMOutput], f: Facts, warnings: List[str]) -> CriterionResult:
     # Threat words are a hard rule: code decides even if the model is lenient.
     if cid == "C10" and f.threat is not None:
-        word = has_any(conv.transcripcion[f.threat].texto, THREATS)
+        word = threat_word(conv.transcripcion[f.threat].texto)
         return result("C10", "no_cumple", "El agente menciona '%s' para presionar el pago, lo que está prohibido." % word, conv, f.threat)
 
     if llm is None:

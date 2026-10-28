@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.checks import Facts, dates, doc_digits, locate, numbers, weekday_date
+from app.checks import Facts, dates, doc_digits, locate, numbers, threat_word, weekday_date
 from app.evaluator import check_c1, check_c2, check_c4, check_c5
 from app.models import Dataset
 
@@ -75,3 +75,11 @@ def test_weekday_date_matches_calendar():
     assert weekday_date("el sábado 3", call) == date(2026, 10, 3)
     assert weekday_date("el lunes 27", call) is None
     assert weekday_date("el sábado", call) is None
+
+
+def test_threat_words_skip_negations():
+    assert threat_word("Le recomiendo pagar hoy para evitar que su caso pase a cobro jurídico.") == "cobro juridico"
+    assert threat_word("Si no paga será reportada a centrales de riesgo.") == "centrales de riesgo"
+    assert threat_word("Tranquila, no hay ningún proceso de embargo.") is None
+    assert threat_word("Su caso no pasa a cobro jurídico.") is None
+    assert threat_word("Listo, su pago queda reportado y lo verificamos en 48 horas.") is None
